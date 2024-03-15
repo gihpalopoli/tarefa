@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Trânsito da Sala</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    transition: background-color 0.5s ease-in-out;
+  }
+ 
+  .container {
+    position: relative;
+    width: 300px;
+    height: 300px;
+    border-radius: 50%;
+    background-color: #ffffff; /* Cor de fundo branco */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1); /* Sombra suave */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    animation: pulse 1s infinite alternate;
+  }
+
+  @keyframes pulse {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(1.1);
+    }
+  }
+ 
+  .status {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    color: #333;
+    text-align: center;
+    width: 80%;
+    max-width: 200px;
+  }
+  
+  /* Estilos para as imagens fora do círculo */
+  .outside-images {
+    position: absolute;
+    top: -150px; /* Ajuste para posição acima do círculo */
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    z-index: -1; /* Para ficar atrás do círculo */
+  }
+
+  .outside-images img {
+    width: 80px;
+    height: auto;
+  }
+
+  /* Estilos para a imagem dentro do círculo */
+  .inside-image {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+  }
+</style>
+</head>
+<body>
+<audio id="alertSound" src="alert.mp3" preload="auto">
+
+</audio>
+<div class="container" id="container">
+    <!-- Imagem para o estado amarelo -->
+    <img id="yellowImage" class="inside-image" src="images/img1.png" alt="Imagem Amarela" style="display: none;">
+ 
+    <!-- Imagem para o estado verde -->
+    <img id="greenImage" class="inside-image" src="images/img2.png" alt="Imagem Verde" style="display: none;">
+ 
+    <!-- Imagem para o estado vermelho -->
+    <img id="redImage" class="inside-image" src="images/img3.png" alt="Imagem Vermelha" style="display: none;">
+</div>
+ 
+<div class="status" id="status"></div>
+
+<!-- Imagens fora do círculo -->
+<div class="outside-images" id="outsideImages">
+  <img id="outsideYellowImage" src="images/img1.png" alt="Imagem Amarela" style="display: none;">
+  <img id="outsideGreenImage" src="images/img2.png" alt="Imagem Verde" style="display: none;">
+  <img id="outsideRedImage" src="images/img3.png" alt="Imagem Vermelha" style="display: none;">
+</div>
+
+<script>
+  const container = document.getElementById('container');
+  const alertSound = document.getElementById('alertSound');
+  const outsideImages = document.getElementById('outsideImages');
+ 
+  // Função para atualizar o estado
+  function updateStatus(status) {
+    container.className = 'container ' + status.toLowerCase();
+    const statusElement = document.getElementById('status');
+    let statusText = '';
+    let bgColor = '';
+
+    switch (status) {
+      case 'Amarelo':
+        statusText = 'AGUARDANDO LIBERAÇÃO!';
+        bgColor = '#f9be00'; // Amarelo
+        break;
+      case 'Verde':
+        statusText = 'LIBERADO, TRANSITO LIVRE!';
+        bgColor = '#00c851'; // Verde
+        break;
+      case 'Vermelho':
+        statusText = 'BLOQUEADO, ALGÚEM ESTÁ LÁ FORA!';
+        bgColor = '#ff4747'; // Vermelho
+        break;
+      default:
+        statusText = '';
+        break;
+    }
+
+    statusElement.textContent = statusText;
+    document.body.style.backgroundColor = bgColor;
+
+    // Exibir a imagem correspondente ao estado
+    document.getElementById('yellowImage').style.display = status === 'Amarelo' ? 'block' : 'none';
+    document.getElementById('greenImage').style.display = status === 'Verde' ? 'block' : 'none';
+    document.getElementById('redImage').style.display = status === 'Vermelho' ? 'block' : 'none';
+
+    // Exibir as imagens fora do círculo correspondentes ao estado
+    document.getElementById('outsideYellowImage').style.display = status === 'Amarelo' ? 'block' : 'none';
+    document.getElementById('outsideGreenImage').style.display = status === 'Verde' ? 'block' : 'none';
+    document.getElementById('outsideRedImage').style.display = status === 'Vermelho' ? 'block' : 'none';
+
+    // Tocar som de alerta
+    alertSound.play()
+      .catch(error => {
+        console.error('Erro ao reproduzir áudio:', error);
+      });
+  }
+ 
+  // Obter estado da API
+  function getStatus() {
+    fetch('https://niloweb.com.br/transit-room/api/reg_endpoint.php')
+      .then(response => response.json())
+      .then(data => {
+        switch (data[0].res) {
+          case 'A':
+            updateStatus('Amarelo');
+            break;
+          case 'B':
+            updateStatus('Vermelho');
+            break;
+          case 'L':
+            updateStatus('Verde');
+            break;
+          default:
+            updateStatus('');
+            break;
+        }
+      })
+      .catch(error => {
+        console.error('Erro ao obter dados:', error);
+        updateStatus('Erro ao obter dados');
+      });
+  }
+ 
+  // Atualizar status inicialmente
+  getStatus();
+ 
+  // Atualizar status a cada 1 minuto
+  setInterval(getStatus, 60000);
+</script>
+</body>
+</html>
+
+
+
